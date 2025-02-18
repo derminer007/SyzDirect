@@ -50,7 +50,7 @@ def IsSyscallInterfaceGenerated():
         datapoint['idx'] for datapoint in Config.datapoints if not os.path.exists(Config.getFinalInterfaceParingResultByCase(datapoint['idx']))
     ]
         
-        
+
 def AnalyzeTargetPoints():
     # kernel analysis
     Config.logging.info("#### Analyzing syscall entry and calculating distance per block")
