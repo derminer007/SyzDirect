@@ -165,8 +165,10 @@ def PreparePathVariables():
     
     ############### SET BY USER
     global CleanImageTemplatePath,KeyPath
-    CleanImageTemplatePath=""
-    KeyPath=""
+    # assuming image location is in ../../SyzDirect
+    # change it to your image directory
+    CleanImageTemplatePath="../../../../../SyzDirect_image/image/bookworm.img"
+    KeyPath="../../../../../SyzDirect_image/image/bookworm.id_rsa"
     assert os.path.exists(CleanImageTemplatePath), "Please offer clean image path"
     assert os.path.exists(KeyPath), "Please offer key path"
     
@@ -212,7 +214,8 @@ def PrepareArgParser():
         remotecmd=f"cd {LinuxSrcTemplate} && git remote -v"
         res = ExecuteCMD(remotecmd)[0]
         print(res)
-        assert res.find("linux.git")!=-1, "The template does not seem to be linux???"
+        # change check for accepting AIxCC linux kernel
+        assert res.find("linux")!=-1, "The template does not seem to be linux???"
     else:
         LinuxSrcTemplate=None
 
@@ -251,7 +254,7 @@ def Prepare():
     
     actions=PrepareArgParser()
     LoadDatapoints()
-    PrepareBinary()
+    PrepareBinary() # compiles SyzDirect's analyzer binaries. Comment it out after executing all 6 SyzDirect runner script steps for not building it every time
     return actions
     
     
