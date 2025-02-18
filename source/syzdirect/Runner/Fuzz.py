@@ -60,7 +60,13 @@ def MultirunFuzzer():
                 subWorkDir = os.path.join(workRootDir, f"run{i}")
                 config = copy.deepcopy(template_config)
 
-                shutil.rmtree(subWorkDir, ignore_errors=True)
+                # stop removing saved and found crashes after restarting the fuzzer:
+                # shutil.rmtree(subWorkDir, ignore_errors=True)
+
+                # only remove benchfile for restarting:
+                file_path = os.path.join(subWorkDir, "benchfile.txt")
+                if os.path.exists(file_path):
+                    os.remove(file_path)
 
                 config["image"] = CLEAN_IMAGE_PATH
                 config["workdir"] = subWorkDir
@@ -68,10 +74,16 @@ def MultirunFuzzer():
                 config['vm']['kernel'] = kernelImage
                 config['syzkaller'] = syzkaller_path
                 config['hitindex']=int(xidx)
+                # setting kernel_obj to distance build directories outgoing from "Runner" folder:
+                config['kernel_obj'] = f"workdir/kwithdist/case_0/temp_build_{xidx}"
                 
                 bug_title=datapoint['repro bug title']
                 if pd.isna(bug_title):
+                    config['bugdesc']=None
+                else:
                     config['bugdesc']=bug_title
+                # if pd.isna(bug_title):
+                #     config['bugdesc']=bug_title
                 
 
                 with open(configPath, "w") as fp:
