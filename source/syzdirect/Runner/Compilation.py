@@ -9,7 +9,7 @@ def PrepareSourceCode():
         caseSrcDir=Config.getSrcDirByCase(caseIdx)
         if not os.path.exists(caseSrcDir):
             if Config.LinuxSrcTemplate!=None:
-                shutil.copytree(Config.LinuxSrcTemplate,caseSrcDir)
+                shutil.copytree(Config.LinuxSrcTemplate,caseSrcDir) # copy local linux_template in workdir/srcs/case
             else:
                 clonecmd=f'cd {Config.SrcDirRoot} && git clone https://github.com/torvalds/linux.git case_{caseIdx}'
                 Config.ExecuteCMD(clonecmd)
@@ -18,7 +18,7 @@ def PrepareSourceCode():
         checkoutcmd=f"cd {caseSrcDir} && git checkout -f {kernel_commit}"
         Config.ExecuteCMD(checkoutcmd)
         
-        applykcovcmd=f"cd {caseSrcDir} && git apply {Config.KcovPatchPath}"
+        applykcovcmd=f"cd {caseSrcDir} && git apply --3way {Config.KcovPatchPath}" # kcov.diff ; merge with more stable --3way fixing merge errors
         if Config.ExecuteCMD(applykcovcmd)[1].find("patch failed") != -1:
             Config.logging.error(f"[case {caseIdx}] Fail to apply kcov patch!!! Please manually apply!!!")
         
@@ -83,7 +83,7 @@ exec $CLANG "$@"
 
         
         
-        compile_command = f"cd {Config.getSrcDirByCase(caseIdx)} && git checkout -- scripts/Makefile.kcov && make clean && make mrproper && yes | make CC={Config.EmitScriptPath} O={caseBCDir} oldconfig && make CC=\'{Config.EmitScriptPath}\' O={caseBCDir} -j{Config.CPUNum}"
+        compile_command = f"cd {Config.getSrcDirByCase(caseIdx)} && git checkout -- scripts/Makefile.kcov && make clean && make mrproper && yes | make CC={Config.EmitScriptPath} O={caseBCDir} olddefconfig && make CC=\'{Config.EmitScriptPath}\' O={caseBCDir} -j{Config.CPUNum}"
         # print(Config.ExecuteCMD(compile_command))
         os.system(compile_command)
         if IsCompilationSuccessfulByCase(caseBCDir):
@@ -103,7 +103,7 @@ def CompileKernelToBitcodeWithDistance():
         
         caseSrcDir=Config.getSrcDirByCase(caseIdx)
         for xidx in tfmap.keys():
-            tempBuildDir=Config.PrepareDir(os.path.join(caseKernelRoot,"temp_build"))
+            tempBuildDir=Config.PrepareDir(os.path.join(caseKernelRoot, f"temp_build_{xidx}")) # keep all distance building directories and keep each for making coverage work
             targetFunction=tfmap[xidx][0]
             Config.logging.info(f"[case {caseIdx} xidx {xidx}] Starting instrumenting kernel with distance")
             dst_config=os.path.join(tempBuildDir,".config")
@@ -122,9 +122,21 @@ export CFLAGS_KCOV := $(kcov-flags-y)
             Config.ExecuteCMD(mk_cmd)
             
             shutil.copyfile(configPath,dst_config)
+
+            # activate coverage and kasan
+            EnableCoverageConfig=[
+            "CONFIG_KASAN", "CONFIG_DEBUG_INFO_DWARF4", "CONFIG_KASAN_INLINE", "CONFIG_CONFIGFS_FS", "CONFIG_SECURITYFS"
+            ]
+            EnableCovExtra=[
+                "CONFIG_DEBUG_KMEMLEAK", "CONFIG_REFCOUNT_FULL"
+            ]
+
             with open(dst_config,"a") as f:
                 f.write("\nCONFIG_UBSAN=n\n")
                 f.writelines("\nCONFIG_KCOV=y\n")
+
+                f.writelines([f"{c}=y\n" for c in EnableCoverageConfig]) # Configs in .config schreiben (enthält alle weiteren SyzKaller Configs schon)
+                f.writelines([f"{c}=y\n" for c in EnableCovExtra]) # Extra Configs schreiben
                 
             compile_script = '''#!/bin/sh
 cd %s
@@ -149,7 +161,11 @@ make ARCH=x86_64 CC=$CC O=%s -j%s
             
             shutil.copyfile(targetVMLinux,os.path.join(caseKernelRoot,f"vmlinux_{xidx}"))
             shutil.copyfile(targetOutBzimage,Config.getInstrumentedKernelImageByCaseAndXidx(caseIdx,xidx))
-            shutil.rmtree(tempBuildDir)
+            # shutil.rmtree(tempBuildDir) # building folders required for coverage. Do not remove it.
+            # set symlinks to loading coverage in syz-manager for build directories if fuzzer was build with docker
+            # this sets shared docker folder /shared_stuff/advanced_bugs/Clone_SyzDirect/SyzDirect to /host/path/to/stuff/advanced_bugs/Clone_SyzDirect/SyzDirect
+            # uncomment symlink instruction if needed:
+            # os.symlink("/host/path/to/stuff", f"workdir/kwithdist/case_0/temp_build_{xidx}/shared_stuff")
             Config.logging.info(f"[case {caseIdx} xidx {xidx}] Instrument kernel with distance succeed!")
             
             
