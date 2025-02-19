@@ -1,0 +1,53 @@
+index c6796e01e..199dce57b 100644
+--- a/workdir/srcs/case_0/net/ipv6/icmp.c
++++ b/workdir/srcs/case_0/net/ipv6/icmp.c
+@@ -28,6 +28,7 @@
+ 
+ #define pr_fmt(fmt) "IPv6: " fmt
+ 
++#include <linux/kcov.h>
+ #include <linux/module.h>
+ #include <linux/errno.h>
+ #include <linux/types.h>
+@@ -136,18 +137,23 @@ static void icmpv6_xmit_unlock(struct sock *sk)
+ 
+ static bool is_ineligible(const struct sk_buff *skb)
+ {
++	kcov_mark_block(8);
+ 	int ptr_data = (u8 *)(ipv6_hdr(skb) + 1) - skb->data;
+ 	int len = skb->len - ptr_data;
+ 	__u8 nexthdr = ipv6_hdr(skb)->nexthdr;
+ 	__be16 frag_off;
+ 
+-	if (len < 0)
++	if (len < 0) {
+ 		return true;
++	}	
+ 
+ 	ptr_data = ipv6_skip_exthdr(skb, ptr_data, &nexthdr, &frag_off);
+-	if (ptr_data < 0)
++	if (ptr_data < 0) {
++		kcov_mark_block(9);
+ 		return false;
++	}
+ 	if (nexthdr == IPPROTO_ICMPV6) {
++		kcov_mark_block(10);
+ 		u8 _type, *tp;
+ 		tp = skb_header_pointer(skb,
+ 			ptr_data+offsetof(struct icmp6hdr, icmp6_type),
+@@ -1191,6 +1197,7 @@ static struct ctl_table ipv6_icmp_table_template[] = {
+ 
+ struct ctl_table * __net_init ipv6_icmp_sysctl_init(struct net *net)
+ {
++	kcov_mark_block(11);
+ 	struct ctl_table *table_ret;
+ 
+ 	table_ret = kmemdup(ipv6_icmp_table_template,
+@@ -1198,6 +1205,7 @@ struct ctl_table * __net_init ipv6_icmp_sysctl_init(struct net *net)
+ 			GFP_KERNEL);
+ 
+ 	if (table_ret) {
++		kcov_mark_block(12);
+ 		table_ret[0].data = &net->ipv6.sysctl.icmpv6_time;
+ 		table_ret[1].data = &net->ipv6.sysctl.icmpv6_echo_ignore_all;
+ 		table_ret[2].data = &net->ipv6.sysctl.icmpv6_echo_ignore_multicast;
