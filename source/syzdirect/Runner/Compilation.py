@@ -127,16 +127,12 @@ export CFLAGS_KCOV := $(kcov-flags-y)
             EnableCoverageConfig=[
             "CONFIG_KASAN", "CONFIG_DEBUG_INFO_DWARF4", "CONFIG_KASAN_INLINE", "CONFIG_CONFIGFS_FS", "CONFIG_SECURITYFS"
             ]
-            EnableCovExtra=[
-                "CONFIG_DEBUG_KMEMLEAK", "CONFIG_REFCOUNT_FULL"
-            ]
 
             with open(dst_config,"a") as f:
                 f.write("\nCONFIG_UBSAN=n\n")
                 f.writelines("\nCONFIG_KCOV=y\n")
 
                 f.writelines([f"{c}=y\n" for c in EnableCoverageConfig]) # Configs in .config schreiben (enthält alle weiteren SyzKaller Configs schon)
-                f.writelines([f"{c}=y\n" for c in EnableCovExtra]) # Extra Configs schreiben
                 
             compile_script = '''#!/bin/sh
 cd %s
