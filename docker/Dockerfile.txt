@@ -1,0 +1,33 @@
+FROM ubuntu:22.04
+
+# Bitte <USERNAME> durch den gewünschten Benutzernamen ersetzen
+
+# Aktualisieren und grundlegende Pakete installieren
+RUN apt-get update && apt-get install -y \
+    qemu-kvm \
+    libvirt-daemon-system \
+    libvirt-clients \
+    bridge-utils \
+    virt-manager \
+    sudo \
+    golang \
+    make gcc flex bison libncurses-dev libelf-dev libssl-dev \
+    clang cmake ninja-build libboost-all-dev flex bison libssl-dev git bc \
+    python3-pip \
+    nano wget
+
+RUN pip3 install pandas python-Levenshtein tqdm openpyxl
+
+RUN useradd -ms /bin/bash <USERNAME> && \
+    usermod -aG sudo <USERNAME>
+RUN echo "<USERNAME> ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/<USERNAME>
+USER <USERNAME>
+
+# Entwicklungsvariablen für SyzKaller Clean Build
+ENV GOROOT=/shared_stuff/syzkaller_setup/go/go
+ENV PATH=$GOROOT/bin:/shared_stuff/syzkaller_setup/syzkaller/bin:$PATH
+ENV KERNEL_STANI=/shared_stuff/syzkaller_setup/stani_kernel/kernel/case_0
+ENV KERNEL_ADVANCED=/shared_stuff/syzkaller_setup/advanced_bugs/kernel/case_0
+
+# Benutzer root beibehalten
+CMD ["/bin/bash"]
