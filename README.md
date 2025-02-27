@@ -5,6 +5,7 @@ angepasst wurde.
 Die gesetzten Marker in SyzDirect für die AIxCC CVE-2021-43267 und den weiteren Verwundbarkeiten
 CVE-2021-22600, CVE-2021-4154 und CVE-2022-0185 sind im Branch `Marker` enthalten. Dort sind
 auch die für den AIxCC-Kernel angepassten KCov-Patches von SyzDirect.
+Der Branch `SyzKaller` enthält Kernelconfig und SyzKaller-Config für den zu vergleichenden SyzKaller-Fuzzer
 
 # Usage
 Zuerst muss der geklonte Kernel der AIxCC-Linux-Challenge in SyzDirect vorbereitet werden: <br>
